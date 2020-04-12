@@ -2,6 +2,7 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,16 +10,21 @@
 
 int main(int argc, char **argv)
 {
-	short int port;
+	uint16_t port;
+	uint64_t tmpport;
 	uint32_t inaddr;
 
 	struct hostent *hostname;
 	struct servent *service;
 
+	char *end;
+
 	/* Default values */
 	port = 0;
+	tmpport = 0;
 	inaddr = INADDR_ANY;
 	hostname = NULL;
+	end = NULL;
 
 	/* Process command line options */
 	while(--argc)
@@ -45,31 +51,39 @@ int main(int argc, char **argv)
 				{
 					case  'p':
 						if(--argc && *++argv)
-							port = atoi(*argv);
+							tmpport = strtol(*argv, &end, 0);
 						else
 						{
-							fprintf(stderr, "Error: Option \"-p\" requires an argument");
+							fprintf(stderr, "Error: Option \"-p\" requires an argument\n");
 							exit(1);
 						}
 
 						/* Port checking */
-						if(!port)
+
+						/* Checks if iport is more than max port size 
+						   or equal to zero 
+						   or if its a valid decimal number */
+						if(!tmpport || (tmpport > ~(~0<<16)) || *end)
 						{
 							fprintf(stderr, "Error: Invalid local port: %s\n", *argv);
 							exit(1);
 						}
+						/* Checks if iport is used by an another process */
 						if(getservbyport(port, "tcp"))
 						{
 							fprintf(stderr, "Error: port %s already in use\n", *argv);
 							exit(1);
 						}
+						port = tmpport;
+						/* until i figure it out */
+						/* to break out of the outer loop */
+						*(*argv + 1) = 0;
 						break;
 					default:
 						fprintf(stderr, "Error: Invalid Argument: -%c\n", *argv[0]);
 						exit(1);
 				}
 	}
-
 	/* Set a port if one is not given in program arguments */
 	if(!port)
 	{
@@ -95,5 +109,5 @@ int main(int argc, char **argv)
 	
 	bind(tsock, (struct sockaddr *)&addr, size);
 
-	printf("%d , %d\n", inaddr, port);
+	printf("%s , %u\n", inet_ntoa(in_addr), port);
 }
