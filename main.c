@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 int main(int argc, char **argv)
 {
@@ -84,6 +85,7 @@ int main(int argc, char **argv)
 						exit(1);
 				}
 	}
+
 	/* Set a port if one is not given in program arguments */
 	if(!port)
 	{
@@ -98,16 +100,55 @@ int main(int argc, char **argv)
 	struct in_addr in_addr;
 	size_t size;
 
-	tsock = socket(AF_INET, SOCK_STREAM, 0);
+	if((tsock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		fputs("Cant creat socket!\n", stderr);
+		exit(1);
+	}
 
 	in_addr.s_addr = inaddr;
+
 	addr.sin_addr = in_addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 
 	size = sizeof(struct sockaddr_in);
 	
-	bind(tsock, (struct sockaddr *)&addr, size);
+	if(bind(tsock, (struct sockaddr *)&addr, size) < 0)
+	{
+		fputs("Cant bind socket to address\n", stderr);
+		exit(1);
+	}
 
-	printf("%s , %u\n", inet_ntoa(in_addr), port);
+	/* output ip address and port the server is listening to */
+	printf("Starting server\n");
+
+	/* Setup socket to listen for connections */
+	listen(tsock, 10);
+
+	/* Listen for connections and serve clients */
+	struct sockaddr_in clientaddr;
+	int csize;
+	int ctsock;
+
+	char readbuffer[10] = "hello\n";
+	while(1)
+	{
+		printf("listening on %s port %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+		if((ctsock = accept(tsock, (struct sockaddr *)&clientaddr, &csize)) < 0)
+		{
+			fprintf(stderr, "Couldn\'t accept connection from %s on port %d!\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+			exit(1);
+		}
+		printf("Connected to %s on port %d\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+		fflush(stdout);
+
+		while((read(ctsock, readbuffer, 1)) > 0)
+		{
+			write(1, readbuffer, 1);
+			sync();
+		}
+		close(ctsock);
+	}
+	close(tsock);
 }
