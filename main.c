@@ -168,6 +168,7 @@ int main(int argc, char **argv)
 				/* Serve an already connected socket */
 				else
 				{
+					/* test stuff */
 					char buffer[10];
 					read(sock, buffer, 10);
 					write(1, buffer, 10);
