@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+#include "util/util.h"
+
 int main(int argc, char **argv)
 {
 	uint16_t port;
@@ -169,9 +171,7 @@ int main(int argc, char **argv)
 				else
 				{
 					/* test stuff */
-					char buffer[10];
-					read(sock, buffer, 10);
-					write(1, buffer, 10);
+					serve(sock);
 					FD_CLR(sock, &sockset);
 					close(sock);
 				}
