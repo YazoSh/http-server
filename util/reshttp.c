@@ -18,8 +18,10 @@ static int islinebreak(char c)
 */
 static char *fstrcpy(char *s, char *t, int (*isstop)(char))
 {
-	while(!isstop(*t) && (*s = *t))
+	while((*s = *t) && !isstop(*t))
 		t++, s++;
+	if(*s)
+		*s = '\0';
 	return t;
 }
 
@@ -40,6 +42,7 @@ struct httpreq *reshttp(char *req)
 			httpreq.method = M_GET;
 			reqlinep = fstrcpy(httpreq.resource, reqlinep, ispace);
 			reqlinep = fstrcpy(httpreq.version, reqlinep, islinebreak);
+			break;
 		}
 		else
 		{

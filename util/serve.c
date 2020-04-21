@@ -23,6 +23,6 @@ int serve(int ctsock)
 	struct httpreq *httpreq;
 	httpreq = reshttp(reqbuff);
 
-	printf("%d %s --  %s\n", httpreq->method, httpreq->resource, httpreq->version);
+	printf("%d %s -- %s\n", httpreq->method, httpreq->resource, httpreq->version);
 	return ctsock;
 }
