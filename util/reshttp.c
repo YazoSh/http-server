@@ -1,54 +1,71 @@
 #include <string.h>
 
 #include "util.h"
+#include "headerlist.h"
 
-static int ispace(char c)
-{
-	return (c == ' ' || c == '\t');
-}
-
-static int islinebreak(char c)
-{
-	return (c == '\n');
-}
+#define S_GET 	"GET"
+#define S_POST 	"POST"
 
 /*
    Copy a string from t to s until a NULL
    or until an isstop charecter
 */
-static char *fstrcpy(char *s, char *t, int (*isstop)(char))
+static char *cpyline(char *s, char *req)
 {
-	while((*s = *t) && !isstop(*t))
-		t++, s++;
-	if(*s)
-		*s = '\0';
-	return t;
+	while((*s = *req) && strncmp(req, "\r\n", 2))
+		s++, req++;
+	*s = '\0';
+	req += 2;
+	return req;
+}
+
+static char *cpyword(char *s, char *req)
+{
+	while((*s = *req) && *req != ' ' && *req != ':')
+		s++, req++;
+	*s = '\0';
+	return ++req;
 }
 
 struct httpreq *reshttp(char *req)
 {
 	static struct httpreq httpreq;
 
-	char reqline[100];
-	char *reqlinep = reqline;
+	char httpline[256];
+	char *httplinep = httpline;
+
+	/* Parse the request line */
+	req = cpyline(httplinep, req);
+	if(!strncmp(httplinep, S_GET, sizeof(S_GET) - 1))
+	{
+		httplinep += sizeof(S_GET);
+
+		httpreq.method = M_GET;
+		httplinep = cpyword(httpreq.resource, httplinep);
+		httplinep = cpyword(httpreq.version, httplinep);
+	}
+	//else if(!strncmp(reqline, S_POST, sizeof(S_POST) - 1)
+	//TODO
+	else
+		httpreq.method = 69;
+
+	/* Load the request headers into a linked list */
+	char *headername;
+	char *headercontent;
+	httpreq.headers = NULL;
 
 	while(*req)
 	{
-		req = fstrcpy(reqline, req, islinebreak);
-		if(!strncmp(reqline, S_GET, sizeof(S_GET) - 1))
-		{
-			reqlinep += sizeof(S_GET);
+		httplinep = httpline;
+		req = cpyline(httplinep, req);
 
-			httpreq.method = M_GET;
-			reqlinep = fstrcpy(httpreq.resource, reqlinep, ispace);
-			reqlinep = fstrcpy(httpreq.version, reqlinep, islinebreak);
-			break;
-		}
-		else
-		{
-			httpreq.method = 69;
-			break;
-		}
+		headername = httpline;
+		httplinep = strchr(httpline, ':');
+		*httplinep = '\0'; 
+
+		headercontent = httplinep + 2;
+
+		httpreq.headers = addheader(httpreq.headers, headername, headercontent);
 	}
 	return &httpreq;
 }

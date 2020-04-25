@@ -5,6 +5,7 @@ struct httpreq {
 	int method;
 	char version[16];
 	char resource[128];
+	struct httpheader *headers;
 };
 
 extern int serve(int);
@@ -26,9 +27,6 @@ extern int serve(int);
 #define M_OPTIONS	7
 #define M_CONNECT	8
 #define M_PATCH		9
-
-static char S_GET[] = "GET";
-//TODO
 
 extern struct httpreq *reshttp(char *);
 
