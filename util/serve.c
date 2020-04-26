@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "util.h"
+#include "headerlist.h"
 
 int serve(int ctsock)
 {
@@ -23,6 +24,15 @@ int serve(int ctsock)
 	struct httpreq *httpreq;
 	httpreq = reshttp(reqbuff);
 
+	/* test stuff */
 	printf("%d %s -- %s\n", httpreq->method, httpreq->resource, httpreq->version);
+	struct httpheader *t;
+	t = httpreq->headers;
+	while(t)
+	{
+		printf("%s: %s\n", t->name, t->content);
+		t = t->next;
+	}
+	
 	return ctsock;
 }

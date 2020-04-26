@@ -23,7 +23,7 @@ struct httpheader *addheader(struct httpheader *node, char *name, char *content)
 	if(!new) return NULL;
 
 	new->name = malloc(strlen(name) + 1);
-	if(new->name) return NULL;
+	if(!new->name) return NULL;
 	strcpy(new->name, name);
 
 	new->content = malloc(strlen(content) + 1);

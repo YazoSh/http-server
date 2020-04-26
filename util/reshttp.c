@@ -54,10 +54,9 @@ struct httpreq *reshttp(char *req)
 	char *headercontent;
 	httpreq.headers = NULL;
 
-	while(*req)
+	while(*(req = cpyline(httpline, req)))
 	{
 		httplinep = httpline;
-		req = cpyline(httplinep, req);
 
 		headername = httpline;
 		httplinep = strchr(httpline, ':');
