@@ -138,22 +138,27 @@ int main(int argc, char **argv)
 
 	csize = sizeof(struct sockaddr_in);
 
-	fd_set sockset;
-	FD_ZERO(&sockset);
+	fd_set activesockset;
+	fd_set readysockset;
+
+	FD_ZERO(&activesockset);
+	FD_ZERO(&readysockset);
+
+	FD_SET(ltsock, &activesockset);
 		
 	while(1)
 	{
-		FD_SET(ltsock, &sockset);
-		if(select(FD_SETSIZE, &sockset, NULL, NULL, NULL) < 0)
+		readysockset = activesockset;
+		if(select(FD_SETSIZE, &readysockset, NULL, NULL, NULL) < 0)
 		{
 			fputs("Error: select\n", stderr);
 			exit(1);
 		}
 
-		for(int sock = 0; sock < FD_SETSIZE; sock++)
+		for(int sock = 0; (sock < FD_SETSIZE); sock++)
 		{
 			/* Connection requrst on listening socket */
-			if(FD_ISSET(sock, &sockset))
+			if(FD_ISSET(sock, &readysockset))
 			{
 				if(sock == ltsock)
 				{
@@ -162,17 +167,23 @@ int main(int argc, char **argv)
 						fputs("Error: Accepting connection!\n", stderr);
 					else
 					{
-						FD_SET(ctsock, &sockset);
+						FD_SET(ctsock, &activesockset);
 						printf("Server: Connecte from %s:%d\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
-						fflush(stdout);
 					}
 				}
 				/* Serve an already connected socket */
 				else
 				{
 					/* test stuff */
+					char somebuffer[100];
 					serve(sock);
-					FD_CLR(sock, &sockset);
+					FD_CLR(sock, &activesockset);
+
+					// temp response
+					getpeername(sock, (struct sockaddr *)&clientaddr, &csize);
+					csize = sprintf(somebuffer, "i can hear you mr: %s:%d\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+					write(sock, somebuffer, csize);
+
 					close(sock);
 				}
 			}

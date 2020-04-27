@@ -14,6 +14,7 @@ static char *cpyline(char *s, char *req)
 {
 	while((*s = *req) && strncmp(req, "\r\n", 2))
 		s++, req++;
+	/* move req to next line */
 	if(*req)
 		req += 2;
 	*s = '\0';
@@ -48,9 +49,13 @@ struct httpreq *reshttp(char *req)
 	//else if(!strncmp(reqline, S_POST, sizeof(S_POST) - 1)
 	//TODO
 	else
-		httpreq.method = 69;
+		return NULL;
 
-	/* Load the request headers into a linked list */
+	/*
+		process header fields and load them into a 
+		linked list
+		breakes when and empty line is encountered 
+	*/
 	char *headername;
 	char *headercontent;
 	httpreq.headers = NULL;
@@ -61,11 +66,16 @@ struct httpreq *reshttp(char *req)
 
 		headername = httpline;
 		httplinep = strchr(httpline, ':');
+		if(!httplinep)
+			return NULL;
 		*httplinep = '\0'; 
 
+		/* skip the ':' and the space */
 		headercontent = httplinep + 2;
 
 		httpreq.headers = addheader(httpreq.headers, headername, headercontent);
 	}
+	// Process req body
+	//TODO
 	return &httpreq;
 }
