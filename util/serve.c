@@ -23,7 +23,7 @@ int serve(int ctsock)
 	struct httpreq *httpreq;
 	if(!(httpreq = reshttp(reqbuff)))
 	{
-		;//TODO
+		return ctsock;//TODO
 	}
 
 	/* test stuff */
