@@ -14,8 +14,9 @@ static char *cpyline(char *s, char *req)
 {
 	while((*s = *req) && strncmp(req, "\r\n", 2))
 		s++, req++;
+	if(*req)
+		req += 2;
 	*s = '\0';
-	req += 2;
 	return req;
 }
 
