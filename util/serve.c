@@ -13,7 +13,7 @@ int serve(int ctsock)
 	sockflags |= O_NONBLOCK;
 	fcntl(ctsock, F_SETFL, sockflags);
 
-	char reqbuff[512];
+	char reqbuff[1024];
 	char *reqbuffp = reqbuff;
 	ssize_t readsize;
 	while((reqbuffp < (reqbuff + sizeof(reqbuff))) && ((readsize = read(ctsock, reqbuffp, 100)) > 0))
