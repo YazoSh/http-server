@@ -28,6 +28,7 @@ extern int serve(int);
 #define M_CONNECT	8
 #define M_PATCH		9
 
-extern struct httpreq *reshttp(char *);
+extern struct httpreq *resreq(char *);
+extern char *constresp(struct httpreq *req);
 
 #endif

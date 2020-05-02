@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 
 #include "util.h"
 #include "headerlist.h"
@@ -29,7 +30,7 @@ static char *cpyword(char *s, char *req)
 	return ++req;
 }
 
-struct httpreq *reshttp(char *req)
+struct httpreq *resreq(char *req)
 {
 	static struct httpreq httpreq;
 
@@ -78,4 +79,27 @@ struct httpreq *reshttp(char *req)
 	// Process req body
 	//TODO
 	return &httpreq;
+}
+
+char *constresp(struct httpreq *req)
+{
+	static char buffer[1024];
+	*buffer = '\0';
+	char *bufferp = buffer;
+	FILE *resource = NULL;
+	char path[256] = ".";
+	if(req->method == M_GET)
+	{
+		bufferp = strcat(bufferp, "HTTP/1.1 200 OK\r\n\r\n");
+		bufferp += strlen(bufferp);
+
+		strcat(path, req->resource);
+		resource = fopen(path, "r");
+
+		int c;
+		while((c = fgetc(resource)) > 0)
+			*bufferp++ = c;
+		*bufferp = '\0';
+	}
+	return buffer;
 }

@@ -15,22 +15,29 @@ int serve(int ctsock)
 	sockflags |= O_NONBLOCK;
 	fcntl(ctsock, F_SETFL, sockflags);
 
+	/* buffer for everything */
 	char buffer[1024];
-	char *reqbuffp = buffer;
 
 	/* read data from client */
+	char *reqbuffp = buffer;
 	ssize_t readsize;
 	while((reqbuffp < (buffer + sizeof(buffer))) && ((readsize = read(ctsock, reqbuffp, sizeof(buffer))) > 0))
 		reqbuffp += readsize;
 	*reqbuffp = '\0';
 
 	struct httpreq *httpreq;
-	if(!(httpreq = reshttp(buffer)))
+	if(!(httpreq = resreq(buffer)))
 	{
 		return ctsock;//TODO
 	}
 	
 	/* Construct a response */
+	char *response;
+	response = constresp(httpreq);
+
+	/* send response */
+	while(*response)
+		write(ctsock, response++, 1);
 
 	/* useless code */
 	printf("%d %s -- %s\n", httpreq->method, httpreq->resource, httpreq->version);
