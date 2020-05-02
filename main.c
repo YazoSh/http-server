@@ -174,16 +174,8 @@ int main(int argc, char **argv)
 				/* Serve an already connected socket */
 				else
 				{
-					/* test stuff */
-					char somebuffer[100];
 					serve(sock);
 					FD_CLR(sock, &activesockset);
-
-					// temp response
-					getpeername(sock, (struct sockaddr *)&clientaddr, &csize);
-					csize = sprintf(somebuffer, "HTTP/1.1 200 OK\r\n\r\ni can hear you mr: %s:%d\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
-					write(sock, somebuffer, csize);
-
 					close(sock);
 				}
 			}
