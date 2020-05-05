@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "util.h"
 #include "headerlist.h"
@@ -83,18 +84,23 @@ struct httpreq *resreq(char *req)
 
 char *constresp(struct httpreq *req)
 {
-	static char buffer[1024];
-	*buffer = '\0';
-	char *bufferp = buffer;
+	char *buffer = NULL;
+	char *bufferp = NULL;
+	size_t filesize;
+
 	FILE *resource = NULL;
 	char path[256] = ".";
 	if(req->method == M_GET)
 	{
-		bufferp = strcat(bufferp, "HTTP/1.1 200 OK\r\n\r\n");
-		bufferp += strlen(bufferp);
-
 		strcat(path, req->resource);
 		resource = fopen(path, "r");
+		fseek(resource, 0, SEEK_END);
+		filesize = ftell(resource);
+		fseek(resource, 0, SEEK_SET);
+
+		bufferp = buffer = malloc(sizeof(char) * filesize + 17);
+		strcat(bufferp, "HTTP/1.1 200 OK\r\n\r\n");
+		bufferp += strlen(bufferp);
 
 		int c;
 		while((c = fgetc(resource)) > 0)
