@@ -4,11 +4,11 @@
 struct httpreq {
 	int method;
 	char version[16];
-	char resource[128];
+	char resource[256];
 	struct httpheader *headers;
 };
 
-extern int serve(int);
+int serve(int);
 
 /* HTTP constant suff */
 
@@ -28,7 +28,13 @@ extern int serve(int);
 #define M_CONNECT	8
 #define M_PATCH		9
 
-extern struct httpreq *resreq(char *);
-extern char *constresp(struct httpreq *req);
+/* Status codes */
+
+#define S_OK 		"200 OK"
+#define S_NOTFOUND	"404 Not Found"
+//TODO
+
+struct httpreq *resreq(char *);
+char *constresp(struct httpreq *req);
 
 #endif

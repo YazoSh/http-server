@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "util.h"
 #include "headerlist.h"
@@ -35,11 +36,17 @@ int serve(int ctsock)
 	char *response;
 	response = constresp(httpreq);
 
+	if(!response)
+		return ctsock;
+
 	/* send response */
-	while(*response)
-		write(ctsock, response++, 1);
+	char *responsep = response;
+	while(*responsep)
+		write(ctsock, responsep++, 1);
+	free((void *)response);
 
 	/* useless code */
+
 	printf("%d %s -- %s\n", httpreq->method, httpreq->resource, httpreq->version);
 	struct httpheader *t;
 	t = httpreq->headers;
@@ -48,7 +55,9 @@ int serve(int ctsock)
 		printf("%s: %s\n", t->name, t->content);
 		t = t->next;
 	}
+
 	/*	*/
 
+	freeheaderlist(httpreq->headers);
 	return ctsock;
 }

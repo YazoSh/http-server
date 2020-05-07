@@ -4,6 +4,7 @@
 
 #include "util.h"
 #include "headerlist.h"
+#include "info.h"
 
 #define S_GET 	"GET"
 #define S_POST 	"POST"
@@ -84,28 +85,63 @@ struct httpreq *resreq(char *req)
 
 char *constresp(struct httpreq *req)
 {
-	char *buffer = NULL;
-	char *bufferp = NULL;
+	char *response = NULL;
+	char *responsep = NULL;
 	size_t filesize;
 
 	FILE *resource = NULL;
 	char path[256] = ".";
+
+	char header[64];
+	*header = '\0';
+
 	if(req->method == M_GET)
 	{
 		strcat(path, req->resource);
+
 		resource = fopen(path, "r");
-		fseek(resource, 0, SEEK_END);
-		filesize = ftell(resource);
-		fseek(resource, 0, SEEK_SET);
+		if(resource)
+		{
+			strcat(header, req->version);
+			strcat(header, " ");
+			strcat(header, S_OK);
+			strcat(header, "\r\n");
 
-		bufferp = buffer = malloc(sizeof(char) * filesize + 17);
-		strcat(bufferp, "HTTP/1.1 200 OK\r\n\r\n");
-		bufferp += strlen(bufferp);
+			strcat(header, "\r\n");
+		
+			fseek(resource, 0, SEEK_END);
+			filesize = ftell(resource);
+			fseek(resource, 0, SEEK_SET);
 
-		int c;
-		while((c = fgetc(resource)) > 0)
-			*bufferp++ = c;
-		*bufferp = '\0';
+			response = malloc((sizeof(char) * filesize) + strlen(header));
+			*response = '\0';
+			responsep = response;
+
+			strcat(response, header);
+			responsep += strlen(response);
+
+			int c;
+			while((c = fgetc(resource)) > 0)
+				*responsep++ = c;
+			*responsep = '\0';
+			return response;
+		}
+		/* if resource is not found */
+		else
+		{
+			strcat(header, req->version);
+			strcat(header, " ");
+			strcat(header, S_NOTFOUND);
+			strcat(header, "\r\n");
+
+			response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(header));
+			*response = '\0';
+
+			strcat(response, header);
+			strcat(response, "\r\n");
+			strcat(response, P_NOTFOUND);
+
+			return response;
+		}
 	}
-	return buffer;
 }

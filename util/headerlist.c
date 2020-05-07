@@ -38,6 +38,8 @@ struct httpheader *addheader(struct httpheader *node, char *name, char *content)
 /* free the httpheader list memory */
 void freeheaderlist(struct httpheader *node)
 {
+	if(!node)
+		return;
 	free((void *)node->name);
 	free((void *)node->content);
 	freeheaderlist(node->next);

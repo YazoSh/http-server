@@ -7,8 +7,7 @@ struct httpheader {
 	struct httpheader *next;
 };
 
-extern struct httpheader *addheader(struct httpheader *, char *name, char *content);
-
-extern void freeheaderlist(struct httpheader *node);
+struct httpheader *addheader(struct httpheader *, char *name, char *content);
+void freeheaderlist(struct httpheader *node);
 
 #endif
