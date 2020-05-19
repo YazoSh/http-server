@@ -1,6 +1,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <limits.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "util.h"
 #include "headerlist.h"
@@ -83,65 +88,93 @@ struct httpreq *resreq(char *req)
 	return &httpreq;
 }
 
+static char *consthttpheaders(char *resp, char *version, char *statuscode)
+{
+	strcat(resp, version);
+	strcat(resp, " ");
+	strcat(resp, statuscode);
+	strcat(resp, HTTP_ENDLINE);
+
+	strcat(resp, HTTP_ENDLINE);
+	return resp;
+}
+
 char *constresp(struct httpreq *req)
 {
 	char *response = NULL;
 	char *responsep = NULL;
 	size_t filesize;
 
+	DIR *dresource = NULL;
 	FILE *resource = NULL;
-	char path[256] = ".";
+	int resourcefd;
+
+	char path[PATH_MAX];
+	*path =  '\0';
 
 	char header[64];
 	*header = '\0';
 
 	if(req->method == M_GET)
 	{
+		if(!getcwd(path, sizeof(path)))
+		{
+			;//TODO
+		}
 		strcat(path, req->resource);
 
-		resource = fopen(path, "r");
-		if(resource)
+		resourcefd = open(path, O_RDONLY);
+		if(resourcefd >= 0)
 		{
-			strcat(header, req->version);
-			strcat(header, " ");
-			strcat(header, S_OK);
-			strcat(header, "\r\n");
+			if((dresource = fdopendir(resourcefd)))
+			{
+				consthttpheaders(header, req->version, S_OK);
 
-			strcat(header, "\r\n");
-		
-			fseek(resource, 0, SEEK_END);
-			filesize = ftell(resource);
-			fseek(resource, 0, SEEK_SET);
+				response = malloc(128 /* TODO */ + strlen(header) + 1);
+				*response = '\0';
+				responsep = response;
 
-			response = malloc((sizeof(char) * filesize) + strlen(header));
-			*response = '\0';
-			responsep = response;
+				strcat(response, header);
+				strcat(response, "DIR this is");
+				return response;
+			}
+			// if resource was a normal file
+			else if((resource = fdopen(resourcefd, "r")))
+			{
+				consthttpheaders(header, req->version, S_OK);
 
-			strcat(response, header);
-			responsep += strlen(response);
+				fseek(resource, 0, SEEK_END);
+				filesize = ftell(resource);
+				fseek(resource, 0, SEEK_SET);
 
-			int c;
-			while((c = fgetc(resource)) > 0)
-				*responsep++ = c;
-			*responsep = '\0';
-			return response;
+				response = malloc((sizeof(char) * filesize) + strlen(header) + 1);
+				*response = '\0';
+				responsep = response;
+
+				strcat(response, header);
+				responsep += strlen(response);
+
+				int c;
+				while((c = fgetc(resource)) > 0)
+					*responsep++ = c;
+				*responsep = '\0';
+				return response;
+			}
 		}
 		/* if resource is not found */
 		else
 		{
-			strcat(header, req->version);
-			strcat(header, " ");
-			strcat(header, S_NOTFOUND);
-			strcat(header, "\r\n");
-
+			consthttpheaders(header, req->version, S_NOTFOUND);
+	
 			response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(header));
 			*response = '\0';
 
 			strcat(response, header);
-			strcat(response, "\r\n");
 			strcat(response, P_NOTFOUND);
 
 			return response;
 		}
 	}
+	//else
+	//TODO
 }

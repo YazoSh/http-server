@@ -28,6 +28,9 @@ int serve(int);
 #define M_CONNECT	8
 #define M_PATCH		9
 
+/* stuff */
+#define HTTP_ENDLINE "\r\n"
+
 /* Status codes */
 
 #define S_OK 		"200 OK"

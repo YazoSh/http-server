@@ -45,18 +45,8 @@ int serve(int ctsock)
 		write(ctsock, responsep++, 1);
 	free((void *)response);
 
-	/* useless code */
-
+	/* output status massages */
 	printf("%d %s -- %s\n", httpreq->method, httpreq->resource, httpreq->version);
-	struct httpheader *t;
-	t = httpreq->headers;
-	while(t)
-	{
-		printf("%s: %s\n", t->name, t->content);
-		t = t->next;
-	}
-
-	/*	*/
 
 	freeheaderlist(httpreq->headers);
 	return ctsock;
