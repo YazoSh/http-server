@@ -126,19 +126,36 @@ char *constresp(struct httpreq *req)
 		resourcefd = open(path, O_RDONLY);
 		if(resourcefd >= 0)
 		{
+			/* if resource is a directory */
 			if((dresource = fdopendir(resourcefd)))
 			{
 				consthttpheaders(header, req->version, S_OK);
 
-				response = malloc(128 /* TODO */ + strlen(header) + 1);
+				response = malloc(1024 /* TODO super magic number */ + strlen(header) + 1);
 				*response = '\0';
 				responsep = response;
 
 				strcat(response, header);
-				strcat(response, "DIR this is");
+
+				/* create hyperlinks for all files in a dirctory */
+				struct dirent *dir;
+				while((dir = readdir(dresource)))
+				{
+					if(dir->d_name[0] == '.')
+						continue;
+					strcat(response, "<div>");
+					strcat(response, "<a href=\"/");
+					//strcat(response, path);
+					strcat(response, dir->d_name);
+					strcat(response, "\">");
+					strcat(response, dir->d_name);
+					strcat(response, "</a>");
+					strcat(response, "</div>");
+				}
+				closedir(dresource);
 				return response;
 			}
-			// if resource was a normal file
+			/* if resource was a normal file */
 			else if((resource = fdopen(resourcefd, "r")))
 			{
 				consthttpheaders(header, req->version, S_OK);
@@ -158,6 +175,7 @@ char *constresp(struct httpreq *req)
 				while((c = fgetc(resource)) > 0)
 					*responsep++ = c;
 				*responsep = '\0';
+				fclose(resource);
 				return response;
 			}
 		}
