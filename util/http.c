@@ -37,6 +37,12 @@ static char *cpyword(char *s, char *req)
 	return ++req;
 }
 
+/* selector function for scandir*/
+static int selector_nothidden(const struct dirent *dir)
+{
+	return (dir->d_name[0] == '.')?0:1;
+}
+
 struct httpreq *resreq(char *req)
 {
 	static struct httpreq httpreq;
@@ -109,18 +115,13 @@ char *constresp(struct httpreq *req)
 	FILE *resource = NULL;
 	int resourcefd;
 
-	char path[PATH_MAX];
-	*path =  '\0';
+	char path[PATH_MAX] = "./";
 
 	char header[64];
 	*header = '\0';
 
 	if(req->method == M_GET)
 	{
-		if(!getcwd(path, sizeof(path)))
-		{
-			;//TODO
-		}
 		strcat(path, req->resource);
 
 		resourcefd = open(path, O_RDONLY);
@@ -138,20 +139,30 @@ char *constresp(struct httpreq *req)
 				strcat(response, header);
 
 				/* create hyperlinks for all files in a dirctory */
+
 				struct dirent *dir;
-				while((dir = readdir(dresource)))
+				struct dirent **dirs;
+				void *pdirs;
+				int dircount;
+
+				dircount = scandir(path, &dirs, selector_nothidden, alphasort);
+				pdirs = dirs;
+				while(dircount--)
 				{
-					if(dir->d_name[0] == '.')
-						continue;
+					dir = *(dirs++);
+
+					/* create the html */
 					strcat(response, "<div>");
 					strcat(response, "<a href=\"/");
-					//strcat(response, path);
 					strcat(response, dir->d_name);
 					strcat(response, "\">");
 					strcat(response, dir->d_name);
 					strcat(response, "</a>");
 					strcat(response, "</div>");
+
+					free((void *)dir);
 				}
+				free(pdirs);
 				closedir(dresource);
 				return response;
 			}
