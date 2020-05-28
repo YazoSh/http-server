@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include "util.h"
 #include "headerlist.h"
@@ -128,7 +129,8 @@ char *constresp(struct httpreq *req)
 		if(resourcefd >= 0)
 		{
 			/* if resource is a directory */
-			if((dresource = fdopendir(resourcefd)))
+			errno = 0;
+			if((dresource = fdopendir(resourcefd)) && errno != ENOTDIR)
 			{
 				consthttpheaders(header, req->version, S_OK);
 
@@ -139,7 +141,6 @@ char *constresp(struct httpreq *req)
 				strcat(response, header);
 
 				/* create hyperlinks for all files in a dirctory */
-
 				struct dirent *dir;
 				struct dirent **dirs;
 				void *pdirs;
@@ -153,7 +154,10 @@ char *constresp(struct httpreq *req)
 
 					/* create the html */
 					strcat(response, "<div>");
-					strcat(response, "<a href=\"/");
+					strcat(response, "<a href=\"");
+					if(strlen(req->resource) > 1)
+						strcat(response, req->resource);
+					strcat(response, "/");
 					strcat(response, dir->d_name);
 					strcat(response, "\">");
 					strcat(response, dir->d_name);
