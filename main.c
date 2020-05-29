@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	printf("listening on %s port %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));	
 
 	/* Setup socket to listen for connections */
-	listen(ltsock, 10);
+	listen(ltsock, 100);
 
 	/* Listen for connections and serve clients */
 	struct sockaddr_in clientaddr;
@@ -139,12 +139,14 @@ int main(int argc, char **argv)
 	csize = sizeof(struct sockaddr_in);
 
 	fd_set activesockset;
+	unsigned int numactivesock = 0;
 	fd_set readysockset;
 
 	FD_ZERO(&activesockset);
 	FD_ZERO(&readysockset);
 
 	FD_SET(ltsock, &activesockset);
+	numactivesock++;
 		
 	while(1)
 	{
@@ -155,20 +157,24 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 
-		for(int sock = 0; (sock < FD_SETSIZE); sock++)
+		for(int sock = 0; (sock < 1024 /* magic number, maybe */); sock++)
 		{
-			/* Connection requrst on listening socket */
 			if(FD_ISSET(sock, &readysockset))
 			{
+				/* Connection requrst on listening socket */
 				if(sock == ltsock)
 				{
-					ctsock = accept(sock, (struct sockaddr *)&clientaddr, &csize);	
-					if(ctsock < 0)
-						fputs("Error: Accepting connection!\n", stderr);
-					else
+					if(numactivesock < FD_SETSIZE)
 					{
-						FD_SET(ctsock, &activesockset);
-						printf("Server: Connecte from %s:%d\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+						ctsock = accept(sock, (struct sockaddr *)&clientaddr, &csize);	
+						if(ctsock < 0)
+							fputs("Error: Accepting connection!\n", stderr);
+						else
+						{
+							FD_SET(ctsock, &activesockset);
+							numactivesock++;
+							printf("Server: Connecte from %s:%d\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+						}
 					}
 				}
 				/* Serve an already connected socket */
@@ -176,6 +182,7 @@ int main(int argc, char **argv)
 				{
 					serve(sock);
 					FD_CLR(sock, &activesockset);
+					numactivesock--;
 					close(sock);
 				}
 			}
