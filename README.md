@@ -6,6 +6,6 @@ and run "server" in desired directory
 to host your stuff
 
 runs on port 5000 on default if available 
-use -p PORT to specifie port
+use -p PORT to specifie a port
 
-work on all POSIX  systems, hopefully
+works on all POSIX  systems, hopefully
