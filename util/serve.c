@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "util.h"
 #include "headerlist.h"
@@ -16,13 +17,15 @@ int serve(int ctsock)
 	sockflags |= O_NONBLOCK;
 	fcntl(ctsock, F_SETFL, sockflags);
 
-	/* buffer for everything */
+	/* buffer the http request */
 	char buffer[1024];
 
 	/* read data from client */
 	char *reqbuffp = buffer;
 	ssize_t readsize;
-	while((reqbuffp < (buffer + sizeof(buffer))) && ((readsize = read(ctsock, reqbuffp, sizeof(buffer))) > 0))
+	while((reqbuffp < (buffer + sizeof(buffer))) &&
+		((readsize = read(ctsock, reqbuffp, sizeof(buffer) - 1)) > 0))
+
 		reqbuffp += readsize;
 	*reqbuffp = '\0';
 
@@ -42,7 +45,10 @@ int serve(int ctsock)
 	/* send response */
 	char *responsep = response;
 	while(*responsep)
-		write(ctsock, responsep++, 1);
+	{
+		if((readsize = write(ctsock, responsep, strlen(responsep))) >= 0)
+				responsep += readsize;
+	}
 	free((void *)response);
 
 	/* output status massages */

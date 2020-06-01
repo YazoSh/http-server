@@ -1,10 +1,12 @@
 #ifndef util
 #define util
 
+#include <limits.h>
+
 struct httpreq {
 	int method;
 	char version[16];
-	char resource[256];
+	char resource[PATH_MAX];
 	struct httpheader *headers;
 };
 
@@ -32,10 +34,13 @@ int serve(int);
 #define HTTP_ENDLINE "\r\n"
 
 /* Status codes */
-
 #define S_OK 		"200 OK"
 #define S_NOTFOUND	"404 Not Found"
 //TODO
+
+/* HTTP method's strings */
+#define S_GET "GET"
+#define S_POST "POST"
 
 struct httpreq *resreq(char *);
 char *constresp(struct httpreq *req);
