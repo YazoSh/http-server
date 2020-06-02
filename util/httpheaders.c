@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "headerlist.h"
+#include "httpheaders.h"
+#include "util.h"
 
 /*
 	Add a node to the header list containing the header information
@@ -9,7 +10,6 @@
 	return if no malloc failed to allocate memory,
 	returns the root otherwise.
 */
-
 struct httpheader *addheader(struct httpheader *node, char *name, char *content)
 {
 	if(node)
@@ -44,4 +44,16 @@ void freeheaderlist(struct httpheader *node)
 	free((void *)node->content);
 	freeheaderlist(node->next);
 	free((void *)node);
+}
+
+/* 
+	constructs an HTTP response header
+ 	and concatenates to to respbuffer 
+ */
+char *cathttpheader(char *respbuffer, char *name, char *content)
+{
+	strcat(respbuffer, name);
+	strcat(respbuffer, ": ");
+	strcat(respbuffer, content);
+	strcat(respbuffer, HTTP_ENDLINE);
 }

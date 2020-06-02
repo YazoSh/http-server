@@ -11,7 +11,7 @@
 #include <errno.h>
 
 #include "util.h"
-#include "headerlist.h"
+#include "httpheaders.h"
 #include "info.h"
 
 /*
@@ -38,12 +38,6 @@ static char *cpynword(char *s, char *req, int n)
 		s++, req++;
 	*s = '\0';
 	return ++req;
-}
-
-/* selector function for scandir*/
-static int selector_nothidden(const struct dirent *dir)
-{
-	return (dir->d_name[0] == '.')?0:1;
 }
 
 struct httpreq *resreq(char *req)
@@ -98,12 +92,81 @@ struct httpreq *resreq(char *req)
 	return &httpreq;
 }
 
-static char *consthttpheaders(char *resp, char *version, char *statuscode)
+/* selector function for scandir*/
+static int selector_nothidden(const struct dirent *dir)
 {
+	return (dir->d_name[0] == '.')?0:1;
+}
+
+/* 
+	returnes the media type of a file stored in a staticley allocated array 
+	uses file extentions to determin file type
+	//TODO use file signatures
+*/
+static char *getMIMEtype(char *resource)
+{
+	static char media[64];
+	*media = '\0';
+
+	resource = strrchr(resource, '.');
+	if(!resource)
+	{
+		strcat(media, TYPE_TEXT);
+		strcat(media, SUP_PLAIN);
+	}
+	else if(!strcmp(resource, ".html"))
+	{
+		strcat(media, TYPE_TEXT);
+		strcat(media, SUP_HTML);
+	}
+	else if(!strcmp(resource, ".css"))
+	{
+		strcat(media, TYPE_TEXT);
+		strcat(media, SUP_CSS);
+	}
+	else if(!strcmp(resource, ".js"))
+	{
+		strcat(media, TYPE_APP);
+		strcat(media, SUP_JSCRIPT);
+	}
+	else if(!strcmp(resource, ".gif"))
+	{
+		strcat(media, TYPE_IMAGE);
+		strcat(media, SUP_GIF);
+	}
+	else if(!strcmp(resource, ".jpeg"))
+	{
+		strcat(media, TYPE_IMAGE);
+		strcat(media, SUP_JPEG);
+	}
+	else if(!strcmp(resource, ".png"))
+	{
+		strcat(media, TYPE_IMAGE);
+		strcat(media, SUP_PNG);
+	}
+	else if(!strcmp(resource, ".svg"))
+	{
+		strcat(media, TYPE_IMAGE);
+		strcat(media, SUP_SVG);
+	}
+
+	return media;
+}
+
+static char *consthttpheader(char *resp, char *version, char *statuscode
+		,char *conttype)
+{
+	/* add status line */
 	strcat(resp, version);
 	strcat(resp, " ");
 	strcat(resp, statuscode);
 	strcat(resp, HTTP_ENDLINE);
+
+	/* add repsonse headers */
+
+	// content type header
+	cathttpheader(resp, CONTENT_TYPE, conttype);
+	//TODO
 
 	strcat(resp, HTTP_ENDLINE);
 	return resp;
@@ -120,8 +183,8 @@ char *constresp(struct httpreq *req)
 
 	char path[PATH_MAX] = "./";
 
-	char statusline[64];
-	*statusline = '\0';
+	char respheader[1024];
+	*respheader = '\0';
 
 	if(req->method == M_GET)
 	{
@@ -130,18 +193,18 @@ char *constresp(struct httpreq *req)
 
 		if(resourcefd >= 0)
 		{
-			consthttpheaders(statusline, req->version, S_OK);
 
 			/* if resource is a directory */
 			errno = 0;
 			if((dresource = fdopendir(resourcefd)) && errno != ENOTDIR)
 			{
+				consthttpheader(respheader, req->version, S_OK, TYPE_TEXT SUP_HTML);
 
-				response = malloc(1024 /* TODO super magic number */ + strlen(statusline) + 1);
+				response = malloc(1024 /* TODO super magic number */ + strlen(respheader) + 1);
 				*response = '\0';
 				responsep = response;
 
-				strcat(response, statusline);
+				strcat(response, respheader);
 
 				/* create hyperlinks for all files in a dirctory */
 				struct dirent *dir;
@@ -176,15 +239,17 @@ char *constresp(struct httpreq *req)
 			/* if resource was a normal file */
 			else
 			{
+				consthttpheader(respheader, req->version, S_OK, getMIMEtype(req->resource));
+
 				filesize = lseek(resourcefd, 0, SEEK_END);
 				lseek(resourcefd, 0, SEEK_SET);
 
-				response = malloc((sizeof(char) * filesize) + strlen(statusline) + 1);
+				response = malloc((sizeof(char) * filesize) + strlen(respheader) + 1);
 				*response = '\0';
 				responsep = response;
 
-				/* add response status line */
-				strcat(response, statusline);
+				/* add header */
+				strcat(response, respheader);
 				responsep += strlen(response);
 
 				/* add response body */
@@ -198,15 +263,16 @@ char *constresp(struct httpreq *req)
 		}
 	}
 	/* if resource is not found */
-	consthttpheaders(statusline, req->version, S_NOTFOUND);
+
+	// and if http req is not GET
+	//TODO
+	consthttpheader(respheader, req->version, S_NOTFOUND, TYPE_TEXT SUP_HTML);
 	
-	response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(statusline));
+	response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(respheader));
 	*response = '\0';
 
-	strcat(response, statusline);
+	strcat(response, respheader);
 	strcat(response, P_NOTFOUND);
 
 	return response;
-	//else
-	//TODO
 }

@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "util.h"
-#include "headerlist.h"
+#include "httpheaders.h"
 
 int serve(int ctsock)
 {
