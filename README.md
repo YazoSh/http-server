@@ -1,5 +1,5 @@
 # best
-the worst static http server, that is not ready yet
+the worst static http server
 
 run "compile.sh" to compile
 and run "server" in desired directory
