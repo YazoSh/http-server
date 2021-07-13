@@ -3,6 +3,8 @@
 
 #include <limits.h>
 
+#include "httpheaders.h"
+
 struct httpreq {
 	int method;
 	char version[16];
