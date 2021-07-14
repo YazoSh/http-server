@@ -31,5 +31,6 @@ char  *cathttpheader(char *respbuffer, char *name, char *content);
 #define SUP_JPEG	"jpeg"
 #define SUP_PNG		"png"
 #define SUP_SVG		"svg+xml"
+#define SUP_ICO		"x-icon"
 
 #endif

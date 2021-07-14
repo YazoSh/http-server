@@ -149,6 +149,11 @@ static char *getMIMEtype(char *resource)
 		strcat(media, TYPE_IMAGE);
 		strcat(media, SUP_SVG);
 	}
+	else if(!strcmp(resource, ".ico"))
+	{
+		strcat(media, TYPE_IMAGE);
+		strcat(media, SUP_ICO);
+	}
 
 	return media;
 }
