@@ -134,7 +134,7 @@ static char *getMIMEtype(char *resource)
 		strcat(media, TYPE_IMAGE);
 		strcat(media, SUP_GIF);
 	}
-	else if(!strcmp(resource, ".jpeg"))
+	else if(!(strcmp(resource, ".jpeg") && strcmp(resource, ".jpg")))
 	{
 		strcat(media, TYPE_IMAGE);
 		strcat(media, SUP_JPEG);
@@ -177,10 +177,14 @@ static char *consthttpheader(char *resp, char *version, char *statuscode
 	return resp;
 }
 
-char *constresp(struct httpreq *req)
+struct httpresp constresp(struct httpreq *req)
 {
-	char *response = NULL;
+	struct httpresp response;
+	response.response = NULL;
+	response.size = 0;
+
 	char *responsep = NULL;
+
 	size_t filesize;
 
 	DIR *dresource = NULL;
@@ -205,11 +209,12 @@ char *constresp(struct httpreq *req)
 			{
 				consthttpheader(respheader, req->version, S_OK, TYPE_TEXT SUP_HTML);
 
-				response = malloc(1024 /* TODO super magic number */ + strlen(respheader) + 1);
-				*response = '\0';
-				responsep = response;
+				response.response = malloc(1024 /* TODO super magic number */ + strlen(respheader) + 1);
+				responsep = response.response;
+				*responsep = '\0';
 
-				strcat(response, respheader);
+				strcat(response.response, respheader);
+				responsep += strlen(response.response);
 
 				/* create hyperlinks for all files in a dirctory */
 				struct dirent *dir;
@@ -224,19 +229,23 @@ char *constresp(struct httpreq *req)
 					dir = *(dirs++);
 
 					/* create the html */
-					strcat(response, "<div>");
-					strcat(response, "<a href=\"");
+					strcat(response.response, "<div>");
+					strcat(response.response, "<a href=\"");
 					if(strlen(req->resource) > 1)
-						strcat(response, req->resource);
-					strcat(response, "/");
-					strcat(response, dir->d_name);
-					strcat(response, "\">");
-					strcat(response, dir->d_name);
-					strcat(response, "</a>");
-					strcat(response, "</div>");
+						strcat(response.response, req->resource);
+					strcat(response.response, "/");
+					strcat(response.response, dir->d_name);
+					strcat(response.response, "\">");
+					strcat(response.response, dir->d_name);
+					strcat(response.response, "</a>");
+					strcat(response.response, "</div>");
 
 					free((void *)dir);
 				}
+				
+				// This calculates the lenght of the http body
+				response.size = strlen(response.response) + response.response - responsep;
+
 				free(pdirs);
 				closedir(dresource);
 				return response;
@@ -249,19 +258,17 @@ char *constresp(struct httpreq *req)
 				filesize = lseek(resourcefd, 0, SEEK_END);
 				lseek(resourcefd, 0, SEEK_SET);
 
-				response = malloc((sizeof(char) * filesize) + strlen(respheader) + 1);
-				*response = '\0';
-				responsep = response;
+				response.response = malloc((sizeof(char) * filesize) + strlen(respheader) + 1);
+				*response.response = '\0';
+				responsep = response.response;
 
 				/* add header */
-				strcat(response, respheader);
-				responsep += strlen(response);
+				strcat(response.response, respheader);
+				responsep += strlen(response.response);
 
 				/* add response body */
-				int readsize;
-				while((readsize = read(resourcefd, responsep, filesize)))
-					responsep += readsize;
-				*responsep = '\0';
+				while((response.size += read(resourcefd, responsep, filesize)))
+					responsep += response.size;
 				close(resourcefd);
 				return response;
 			}
@@ -273,11 +280,16 @@ char *constresp(struct httpreq *req)
 	//TODO
 	consthttpheader(respheader, req->version, S_NOTFOUND, TYPE_TEXT SUP_HTML);
 	
-	response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(respheader));
-	*response = '\0';
+	responsep = response.response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(respheader));
+	*response.response = '\0';
 
-	strcat(response, respheader);
-	strcat(response, P_NOTFOUND);
+	strcat(response.response, respheader);
+	responsep += strlen(response.response);
+
+	strcat(response.response, P_NOTFOUND);
+	
+	// calculate the size of the http body
+	response.size = strlen(response.response) + response.response - responsep;
 
 	return response;
 }
