@@ -267,7 +267,7 @@ struct httpresp constresp(struct httpreq *req)
 				responsep += strlen(response.response);
 
 				/* add response body */
-				while((response.size += read(resourcefd, responsep, filesize)))
+				while(response.size != (response.size += read(resourcefd, responsep, filesize)))
 					responsep += response.size;
 				close(resourcefd);
 				return response;
