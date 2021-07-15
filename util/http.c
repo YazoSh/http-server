@@ -211,7 +211,6 @@ struct httpresp constresp(struct httpreq *req)
 				*responsep = '\0';
 
 				strcat(response.response, respheader);
-				responsep += strlen(response.response);
 
 				/* create hyperlinks for all files in a dirctory */
 				struct dirent *dir;
@@ -240,8 +239,7 @@ struct httpresp constresp(struct httpreq *req)
 					free((void *)dir);
 				}
 				
-				// This calculates the lenght of the http body
-				response.size = strlen(response.response) + response.response - responsep;
+				response.size = strlen(response.response);
 
 				free(pdirs);
 				closedir(dresource);
@@ -262,7 +260,8 @@ struct httpresp constresp(struct httpreq *req)
 
 				cathttpheader(respheader, CONTENT_LENGTH, s_length);
 
-				response.response = malloc((sizeof(char) * response.size) + strlen(respheader) + 1);
+				response.size = (sizeof(char) * response.size) + strlen(respheader);
+				response.response = malloc(response.size + 1);
 				*response.response = '\0';
 				responsep = response.response;
 
@@ -287,16 +286,15 @@ struct httpresp constresp(struct httpreq *req)
 	consthttp_statusline(respheader, req->version, S_NOTFOUND);
 	cathttpheader(respheader, CONTENT_TYPE, TYPE_TEXT SUP_HTML);
 	
-	responsep = response.response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(respheader));
+	response.response = malloc(sizeof P_NOTFOUND + strlen(respheader));
 	*response.response = '\0';
 
 	strcat(response.response, respheader);
-	responsep += strlen(response.response);
 
 	strcat(response.response, P_NOTFOUND);
 	
 	// calculate the size of the http body
-	response.size = strlen(response.response) + response.response - responsep;
+	response.size = strlen(response.response);
 
 	return response;
 }

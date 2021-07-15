@@ -44,10 +44,12 @@ int serve(int ctsock)
 
 	/* send response */
 	char *responsep = response.response;
-	while(*responsep)
+	ssize_t writesize;
+	while(response.size > 0)
 	{
-		if((readsize = write(ctsock, responsep, strlen(responsep))) >= 0)
-				responsep += readsize;
+		writesize = write(ctsock, responsep, response.size);
+		response.size -= writesize;
+		responsep += writesize;
 	}
 	free((void *)response.response);
 
