@@ -158,22 +158,18 @@ static char *getMIMEtype(char *resource)
 	return media;
 }
 
-static char *consthttpheader(char *resp, char *version, char *statuscode
-		,char *conttype)
+static char *consthttp_statusline(char *resp, char *version, char *statuscode)
 {
 	/* add status line */
+	*resp = '\0';
 	strcat(resp, version);
 	strcat(resp, " ");
 	strcat(resp, statuscode);
 	strcat(resp, HTTP_ENDLINE);
 
-	/* add repsonse headers */
-
-	// content type header
-	cathttpheader(resp, CONTENT_TYPE, conttype);
-	//TODO
 
 	strcat(resp, HTTP_ENDLINE);
+
 	return resp;
 }
 
@@ -184,8 +180,6 @@ struct httpresp constresp(struct httpreq *req)
 	response.size = 0;
 
 	char *responsep = NULL;
-
-	size_t filesize;
 
 	DIR *dresource = NULL;
 	int resourcefd;
@@ -207,9 +201,12 @@ struct httpresp constresp(struct httpreq *req)
 			errno = 0;
 			if((dresource = fdopendir(resourcefd)) && errno != ENOTDIR)
 			{
-				consthttpheader(respheader, req->version, S_OK, TYPE_TEXT SUP_HTML);
+				consthttp_statusline(respheader, req->version, S_OK);
+				cathttpheader(respheader, CONTENT_TYPE, TYPE_TEXT SUP_HTML);
 
-				response.response = malloc(1024 /* TODO super magic number */ + strlen(respheader) + 1);
+				//TODO
+				// could cause a heap overflow
+				response.response = malloc(1024 /* TODO super magic number*/ + strlen(respheader) + 1);
 				responsep = response.response;
 				*responsep = '\0';
 
@@ -253,12 +250,19 @@ struct httpresp constresp(struct httpreq *req)
 			/* if resource was a normal file */
 			else
 			{
-				consthttpheader(respheader, req->version, S_OK, getMIMEtype(req->resource));
 
-				filesize = lseek(resourcefd, 0, SEEK_END);
+				response.size = lseek(resourcefd, 0, SEEK_END);
 				lseek(resourcefd, 0, SEEK_SET);
+				
+				consthttp_statusline(respheader, req->version, S_OK);
+				cathttpheader(respheader, CONTENT_TYPE, getMIMEtype(req->resource));
 
-				response.response = malloc((sizeof(char) * filesize) + strlen(respheader) + 1);
+				char s_length[100];
+				snprintf(s_length, sizeof(s_length), "%d", response.size);
+
+				cathttpheader(respheader, CONTENT_LENGTH, s_length);
+
+				response.response = malloc((sizeof(char) * response.size) + strlen(respheader) + 1);
 				*response.response = '\0';
 				responsep = response.response;
 
@@ -267,8 +271,8 @@ struct httpresp constresp(struct httpreq *req)
 				responsep += strlen(response.response);
 
 				/* add response body */
-				while(response.size != (response.size += read(resourcefd, responsep, filesize)))
-					responsep += response.size;
+				while(responsep != (responsep += read(resourcefd, responsep, response.size)))
+						;
 				*responsep = '\0';
 
 				close(resourcefd);
@@ -280,7 +284,8 @@ struct httpresp constresp(struct httpreq *req)
 
 	// and if http req is not GET
 	//TODO
-	consthttpheader(respheader, req->version, S_NOTFOUND, TYPE_TEXT SUP_HTML);
+	consthttp_statusline(respheader, req->version, S_NOTFOUND);
+	cathttpheader(respheader, CONTENT_TYPE, TYPE_TEXT SUP_HTML);
 	
 	responsep = response.response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(respheader));
 	*response.response = '\0';
