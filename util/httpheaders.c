@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "httpheaders.h"
 #include "util.h"
@@ -50,10 +51,26 @@ void freeheaderlist(struct httpheader *node)
 	constructs an HTTP response header
  	and concatenates to to respbuffer 
  */
-char *cathttpheader(char *respbuffer, char *name, char *content)
+int cathttpheader(char *respbuffer, char *name, char *content)
 {
+	while(*respbuffer)
+			respbuffer++;
+	respbuffer -= 2;
+
+	if(!strncmp(respbuffer, HTTP_ENDLINE, 2))
+			*respbuffer = '\0';
+	else
+	{
+			printf("cathttpheader error\n");
+			return 1;
+	}
+
 	strcat(respbuffer, name);
 	strcat(respbuffer, ": ");
 	strcat(respbuffer, content);
 	strcat(respbuffer, HTTP_ENDLINE);
+
+	strcat(respbuffer, HTTP_ENDLINE);
+
+	return 0;
 }

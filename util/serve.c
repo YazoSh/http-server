@@ -36,20 +36,22 @@ int serve(int ctsock)
 	}
 	
 	/* Construct a response */
-	char *response;
+	struct httpresp response;
 	response = constresp(httpreq);
 
-	if(!response)
+	if(!response.response)
 		return ctsock;
 
 	/* send response */
-	char *responsep = response;
-	while(*responsep)
+	char *responsep = response.response;
+	ssize_t writesize;
+	while(response.size > 0)
 	{
-		if((readsize = write(ctsock, responsep, strlen(responsep))) >= 0)
-				responsep += readsize;
+		writesize = write(ctsock, responsep, response.size);
+		response.size -= writesize;
+		responsep += writesize;
 	}
-	free((void *)response);
+	free((void *)response.response);
 
 	/* output status massages */
 	printf("%d %s -- %s\n", httpreq->method, httpreq->resource, httpreq->version);

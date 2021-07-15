@@ -9,11 +9,11 @@ struct httpheader {
 
 struct httpheader *addheader(struct httpheader *, char *name, char *content);
 void freeheaderlist(struct httpheader *node);
-char  *cathttpheader(char *respbuffer, char *name, char *content);
+int cathttpheader(char *respbuffer, char *name, char *content);
 
 /* http header fields */
 #define CONTENT_TYPE	"Content-Type"
-#define CONTENT_LENGHT	"Content-Lenght" 
+#define CONTENT_LENGTH	"Content-Lenght" 
 
 /* media types */
 #define TYPE_TEXT 	"text/"

@@ -134,7 +134,7 @@ static char *getMIMEtype(char *resource)
 		strcat(media, TYPE_IMAGE);
 		strcat(media, SUP_GIF);
 	}
-	else if(!strcmp(resource, ".jpeg"))
+	else if(!(strcmp(resource, ".jpeg") && strcmp(resource, ".jpg")))
 	{
 		strcat(media, TYPE_IMAGE);
 		strcat(media, SUP_JPEG);
@@ -158,30 +158,28 @@ static char *getMIMEtype(char *resource)
 	return media;
 }
 
-static char *consthttpheader(char *resp, char *version, char *statuscode
-		,char *conttype)
+static char *consthttp_statusline(char *resp, char *version, char *statuscode)
 {
 	/* add status line */
+	*resp = '\0';
 	strcat(resp, version);
 	strcat(resp, " ");
 	strcat(resp, statuscode);
 	strcat(resp, HTTP_ENDLINE);
 
-	/* add repsonse headers */
-
-	// content type header
-	cathttpheader(resp, CONTENT_TYPE, conttype);
-	//TODO
 
 	strcat(resp, HTTP_ENDLINE);
+
 	return resp;
 }
 
-char *constresp(struct httpreq *req)
+struct httpresp constresp(struct httpreq *req)
 {
-	char *response = NULL;
+	struct httpresp response;
+	response.response = NULL;
+	response.size = 0;
+
 	char *responsep = NULL;
-	size_t filesize;
 
 	DIR *dresource = NULL;
 	int resourcefd;
@@ -203,13 +201,16 @@ char *constresp(struct httpreq *req)
 			errno = 0;
 			if((dresource = fdopendir(resourcefd)) && errno != ENOTDIR)
 			{
-				consthttpheader(respheader, req->version, S_OK, TYPE_TEXT SUP_HTML);
+				consthttp_statusline(respheader, req->version, S_OK);
+				cathttpheader(respheader, CONTENT_TYPE, TYPE_TEXT SUP_HTML);
 
-				response = malloc(1024 /* TODO super magic number */ + strlen(respheader) + 1);
-				*response = '\0';
-				responsep = response;
+				//TODO
+				// could cause a heap overflow
+				response.response = malloc(1024 /* TODO super magic number*/ + strlen(respheader) + 1);
+				responsep = response.response;
+				*responsep = '\0';
 
-				strcat(response, respheader);
+				strcat(response.response, respheader);
 
 				/* create hyperlinks for all files in a dirctory */
 				struct dirent *dir;
@@ -224,19 +225,22 @@ char *constresp(struct httpreq *req)
 					dir = *(dirs++);
 
 					/* create the html */
-					strcat(response, "<div>");
-					strcat(response, "<a href=\"");
+					strcat(response.response, "<div>");
+					strcat(response.response, "<a href=\"");
 					if(strlen(req->resource) > 1)
-						strcat(response, req->resource);
-					strcat(response, "/");
-					strcat(response, dir->d_name);
-					strcat(response, "\">");
-					strcat(response, dir->d_name);
-					strcat(response, "</a>");
-					strcat(response, "</div>");
+						strcat(response.response, req->resource);
+					strcat(response.response, "/");
+					strcat(response.response, dir->d_name);
+					strcat(response.response, "\">");
+					strcat(response.response, dir->d_name);
+					strcat(response.response, "</a>");
+					strcat(response.response, "</div>");
 
 					free((void *)dir);
 				}
+				
+				response.size = strlen(response.response);
+
 				free(pdirs);
 				closedir(dresource);
 				return response;
@@ -244,24 +248,32 @@ char *constresp(struct httpreq *req)
 			/* if resource was a normal file */
 			else
 			{
-				consthttpheader(respheader, req->version, S_OK, getMIMEtype(req->resource));
 
-				filesize = lseek(resourcefd, 0, SEEK_END);
+				response.size = lseek(resourcefd, 0, SEEK_END);
 				lseek(resourcefd, 0, SEEK_SET);
+				
+				consthttp_statusline(respheader, req->version, S_OK);
+				cathttpheader(respheader, CONTENT_TYPE, getMIMEtype(req->resource));
 
-				response = malloc((sizeof(char) * filesize) + strlen(respheader) + 1);
-				*response = '\0';
-				responsep = response;
+				char s_length[100];
+				snprintf(s_length, sizeof(s_length), "%d", response.size);
+
+				cathttpheader(respheader, CONTENT_LENGTH, s_length);
+
+				response.size = (sizeof(char) * response.size) + strlen(respheader);
+				response.response = malloc(response.size + 1);
+				*response.response = '\0';
+				responsep = response.response;
 
 				/* add header */
-				strcat(response, respheader);
-				responsep += strlen(response);
+				strcat(response.response, respheader);
+				responsep += strlen(response.response);
 
 				/* add response body */
-				int readsize;
-				while((readsize = read(resourcefd, responsep, filesize)))
-					responsep += readsize;
+				while(responsep != (responsep += read(resourcefd, responsep, response.size)))
+						;
 				*responsep = '\0';
+
 				close(resourcefd);
 				return response;
 			}
@@ -271,13 +283,18 @@ char *constresp(struct httpreq *req)
 
 	// and if http req is not GET
 	//TODO
-	consthttpheader(respheader, req->version, S_NOTFOUND, TYPE_TEXT SUP_HTML);
+	consthttp_statusline(respheader, req->version, S_NOTFOUND);
+	cathttpheader(respheader, CONTENT_TYPE, TYPE_TEXT SUP_HTML);
 	
-	response = malloc((sizeof(char) * sizeof P_NOTFOUND) + strlen(respheader));
-	*response = '\0';
+	response.response = malloc(sizeof P_NOTFOUND + strlen(respheader));
+	*response.response = '\0';
 
-	strcat(response, respheader);
-	strcat(response, P_NOTFOUND);
+	strcat(response.response, respheader);
+
+	strcat(response.response, P_NOTFOUND);
+	
+	// calculate the size of the http body
+	response.size = strlen(response.response);
 
 	return response;
 }

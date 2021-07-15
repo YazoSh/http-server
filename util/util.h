@@ -2,6 +2,7 @@
 #define util
 
 #include <limits.h>
+#include <sys/types.h>
 
 #include "httpheaders.h"
 
@@ -10,6 +11,11 @@ struct httpreq {
 	char version[16];
 	char resource[PATH_MAX];
 	struct httpheader *headers;
+};
+
+struct httpresp {
+	char *response;
+	ssize_t size;
 };
 
 int serve(int);
@@ -45,6 +51,6 @@ int serve(int);
 #define S_POST "POST"
 
 struct httpreq *resreq(char *);
-char *constresp(struct httpreq *req);
+struct httpresp constresp(struct httpreq *req);
 
 #endif
