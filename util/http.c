@@ -129,6 +129,7 @@ static char *getMIMEtype(char *resource)
 		strcat(media, TYPE_APP);
 		strcat(media, SUP_JSCRIPT);
 	}
+	// Images Type
 	else if(!strcmp(resource, ".gif"))
 	{
 		strcat(media, TYPE_IMAGE);
@@ -153,6 +154,12 @@ static char *getMIMEtype(char *resource)
 	{
 		strcat(media, TYPE_IMAGE);
 		strcat(media, SUP_ICO);
+	}
+	// Audio Types
+	else if(!strcmp(resource, ".mp3"))
+	{
+		strcat(media, TYPE_AUDIO);
+		strcat(media, SUP_MPEG);
 	}
 
 	return media;

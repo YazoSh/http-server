@@ -18,6 +18,7 @@ int cathttpheader(char *respbuffer, char *name, char *content);
 /* media types */
 #define TYPE_TEXT 	"text/"
 #define TYPE_IMAGE 	"image/"
+#define TYPE_AUDIO	"audio/"
 #define TYPE_APP 	"application/"
 
 /* media subtypes */
@@ -32,5 +33,7 @@ int cathttpheader(char *respbuffer, char *name, char *content);
 #define SUP_PNG		"png"
 #define SUP_SVG		"svg+xml"
 #define SUP_ICO		"x-icon"
+
+#define SUP_MPEG	"mpeg"
 
 #endif
