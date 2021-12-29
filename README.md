@@ -8,4 +8,6 @@ to host it's stuff over http
 runs on port 5000 on default if available 
 use -p PORT to specifie a port
 
+Usage: ./server [hostname] [-p PORT]
+
 works on all POSIX  systems, hopefully
