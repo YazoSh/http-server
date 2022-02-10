@@ -263,7 +263,7 @@ struct httpresp constresp(struct httpreq *req)
 				cathttpheader(respheader, CONTENT_TYPE, getMIMEtype(req->resource));
 
 				char s_length[100];
-				snprintf(s_length, sizeof(s_length), "%d", response.size);
+				snprintf(s_length, sizeof(s_length), "%ld", response.size);
 
 				cathttpheader(respheader, CONTENT_LENGTH, s_length);
 
